@@ -64,7 +64,33 @@
 
 ## 설치 방법
 
-### 1. 데이터베이스 설정
+### 빠른 설치 (자동)
+
+설치 스크립트를 사용하면 빠르게 설정할 수 있습니다:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+### 수동 설치
+
+#### 1. config.php 파일 생성
+
+**중요**: 시스템을 사용하기 전에 반드시 `config.php` 파일을 생성해야 합니다.
+
+```bash
+# config.example.php를 config.php로 복사
+cp config.example.php config.php
+
+# config.php 편집 (데이터베이스 정보 입력)
+nano config.php
+
+# 파일 권한 제한
+chmod 600 config.php
+```
+
+#### 2. 데이터베이스 설정
 
 자세한 내용은 [DATABASE_SETUP_GUIDE.md](DATABASE_SETUP_GUIDE.md)를 참조하세요.
 
@@ -76,17 +102,7 @@ mysql -u root -p
 source database_setup.sql
 ```
 
-### 2. 설정 파일 생성
-
-```bash
-# config.example.php를 config.php로 복사
-cp config.example.php config.php
-
-# config.php 편집 (데이터베이스 정보 입력)
-nano config.php
-```
-
-### 3. 파일 권한 설정
+#### 3. 파일 권한 설정
 
 ```bash
 # config.php 권한 제한
@@ -96,7 +112,7 @@ chmod 600 config.php
 chmod 644 *.php
 ```
 
-### 4. 웹 서버 설정
+#### 4. 웹 서버 설정
 
 Apache 서버에서 .htaccess 파일이 작동하도록 설정:
 
