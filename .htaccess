@@ -1,0 +1,17 @@
+# PHP 세션 설정
+php_value session.cookie_httponly 1
+php_value session.cookie_secure 1
+php_value session.use_strict_mode 1
+
+# 디렉토리 리스팅 비활성화
+Options -Indexes
+
+# approval_status.txt 파일 직접 접근 차단
+<Files "approval_status.txt">
+    Require all denied
+</Files>
+
+# HTTPS 리다이렉션 (선택사항)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
