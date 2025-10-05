@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/config.php';
 
 // 인증 확인
 if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
@@ -7,31 +8,82 @@ if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
     exit;
 }
 
-// 승인 상태 파일 경로
-$approval_file = __DIR__ . '/approval_status.txt';
+// 세션 타임아웃 확인
+if (!checkSessionTimeout()) {
+    header('Location: login.php');
+    exit;
+}
+
+$pdo = getDbConnection();
+$user_id = $_SESSION['user_id'] ?? null;
 
 // POST 요청 처리 (승인/거부)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    $csrf_token = $_POST['csrf_token'] ?? '';
     
-    if ($action === 'approve') {
-        // 승인
-        file_put_contents($approval_file, 'check');
-        $message = "승인되었습니다.";
-        $message_type = "success";
-    } elseif ($action === 'reject') {
-        // 거부
-        file_put_contents($approval_file, 'not');
-        $message = "거부되었습니다.";
-        $message_type = "info";
+    // CSRF 토큰 검증
+    if (!verifyCsrfToken($csrf_token)) {
+        $message = "잘못된 요청입니다. 페이지를 새로고침하고 다시 시도하세요.";
+        $message_type = "error";
+    } else {
+        try {
+            if ($action === 'approve') {
+                // 승인
+                $stmt = $pdo->prepare("UPDATE approval_status SET status = 'check', updated_by = ? WHERE id = 1");
+                $stmt->execute([$user_id]);
+                
+                // 활동 로그 기록
+                $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $user_id, 
+                    '승인 상태 변경', 
+                    '데이터베이스 삭제 승인됨', 
+                    $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+                    $_SERVER['HTTP_USER_AGENT'] ?? ''
+                ]);
+                
+                $message = "승인되었습니다.";
+                $message_type = "success";
+            } elseif ($action === 'reject') {
+                // 거부
+                $stmt = $pdo->prepare("UPDATE approval_status SET status = 'not', updated_by = ? WHERE id = 1");
+                $stmt->execute([$user_id]);
+                
+                // 활동 로그 기록
+                $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $user_id, 
+                    '승인 상태 변경', 
+                    '데이터베이스 삭제 거부됨', 
+                    $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+                    $_SERVER['HTTP_USER_AGENT'] ?? ''
+                ]);
+                
+                $message = "거부되었습니다.";
+                $message_type = "info";
+            }
+        } catch (Exception $e) {
+            error_log("승인 상태 변경 오류: " . $e->getMessage());
+            $message = "상태 변경 중 오류가 발생했습니다.";
+            $message_type = "error";
+        }
     }
 }
 
 // 현재 승인 상태 읽기
-$current_status = 'not';
-if (file_exists($approval_file)) {
-    $current_status = trim(file_get_contents($approval_file));
+try {
+    $stmt = $pdo->prepare("SELECT status FROM approval_status WHERE id = 1");
+    $stmt->execute();
+    $result = $stmt->fetch();
+    $current_status = $result['status'] ?? 'not';
+} catch (Exception $e) {
+    error_log("승인 상태 조회 오류: " . $e->getMessage());
+    $current_status = 'not';
 }
+
+// CSRF 토큰 생성
+$csrf_token = generateCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -170,6 +222,11 @@ if (file_exists($approval_file)) {
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
@@ -188,6 +245,7 @@ if (file_exists($approval_file)) {
         </div>
         
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <div class="form-group">
                 <div class="radio-group">
                     <div class="radio-option">

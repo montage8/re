@@ -11,7 +11,18 @@ Options -Indexes
     Require all denied
 </Files>
 
+# 민감한 파일 접근 차단
+<FilesMatch "^(config\.php|config\.example\.php|database_setup\.sql|\.gitignore|.*\.log)$">
+    Require all denied
+</FilesMatch>
+
+# SQL 및 백업 파일 접근 차단
+<FilesMatch "\.(sql|bak|backup|log)$">
+    Require all denied
+</FilesMatch>
+
 # HTTPS 리다이렉션 (선택사항)
+# 실제 배포시 주석을 제거하여 활성화하세요
 # RewriteEngine On
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

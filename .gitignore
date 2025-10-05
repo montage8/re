@@ -1,0 +1,34 @@
+# 데이터베이스 설정 파일 (민감한 정보 포함)
+config.php
+
+# 승인 상태 텍스트 파일 (더 이상 사용하지 않음)
+approval_status.txt
+
+# 로그 파일
+*.log
+
+# 임시 파일
+*.tmp
+*.temp
+
+# 백업 파일
+*.bak
+*.backup
+*.sql.gz
+*.sql.zip
+
+# OS 관련 파일
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE 관련 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# PHP 관련
+vendor/
+composer.phar
